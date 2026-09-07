@@ -142,12 +142,17 @@ class TranslatorClient
             );
         }
 
-        // 413 TEXT_TOO_LARGE and 422 INVALID_LANGUAGE / bad policy are caller errors.
-        // 503 BUSY may be retried. Expose the result_code from the body when available.
+        // 413 TEXT_TOO_LARGE, 422 INVALID_LANGUAGE/bad-policy, 503 BUSY carry a
+        // structured detail body: {result_code, message}. Expose both so callers
+        // can branch on the stable code instead of the HTTP status.
         if ($httpCode >= 400) {
-            $detail  = $data['detail'] ?? $data['error'] ?? $data['message'] ?? "HTTP {$httpCode}";
-            $message = is_array($detail) ? ($detail['message'] ?? json_encode($detail)) : (string) $detail;
-            throw new TranslatorException($message, $httpCode);
+            $detail     = $data['detail'] ?? null;
+            $resultCode = is_array($detail) ? (int) ($detail['result_code'] ?? -1) : -1;
+            $safeError  = is_array($detail) ? (string) ($detail['message']     ?? '') : '';
+            $message    = $safeError !== ''
+                ? $safeError
+                : (is_array($detail) ? json_encode($detail) : (string) ($detail ?? ($data['error'] ?? $data['message'] ?? "HTTP {$httpCode}")));
+            throw new TranslatorException($message, $httpCode, $resultCode, $safeError);
         }
 
         return $data;

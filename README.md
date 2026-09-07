@@ -67,7 +67,11 @@ try {
 } catch (TranslatorException $e) {
     // HTTP 401: bad token · 413: text too large · 422: unsupported language
     // 503: queue full (retry shortly) · 0: network error
-    error_log("Translator error {$e->getHttpCode()}: {$e->getMessage()}");
+    // For structured service errors (413/422/503) getResultCode() gives the stable code.
+    error_log(sprintf(
+        "Translator error HTTP %d result_code %d: %s",
+        $e->getHttpCode(), $e->getResultCode(), $e->getMessage()
+    ));
     echo $originalText;  // safe fallback
 }
 ```
