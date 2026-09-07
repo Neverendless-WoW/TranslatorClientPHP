@@ -10,13 +10,13 @@ class TranslatorClient
 
     /**
      * @param string $baseUrl  Base URL of the translator service, e.g. https://translate.yourdomain.com
-     * @param string $token    Service token (from config.yaml service_tokens)
+     * @param string $token    Service token — must be kept server-side, never exposed to browsers
      * @param int    $timeout  Request timeout in seconds.
      *                         Must exceed the service's OLLAMA_TIMEOUT (default 120s) plus network headroom.
      *                         Cache hits return in <100ms; only cold AI misses approach the full timeout.
      */
     public function __construct(
-        string               $baseUrl,
+        string                  $baseUrl,
         private readonly string $token,
         private readonly int    $timeout = 150,
     ) {
@@ -26,38 +26,47 @@ class TranslatorClient
     /**
      * Translate a string.
      *
-     * @param string      $text       Text to translate
-     * @param string      $targetLang Target language (default: English)
-     * @param string|null $requestId  Optional correlation ID — echoed back in the result
+     * @param string      $text        Text to translate
+     * @param string      $targetLang  Target language — normalized code ('en', 'fr') or full name ('English').
+     *                                 The service always normalizes and returns the code in the result.
+     * @param string|null $requestId   Optional correlation ID — echoed back in the result
+     * @param int         $cachePolicy One of the CachePolicy constants (default NORMAL).
+     *                                 The caller selects based on message type; never forward a
+     *                                 player-supplied value as the policy without validation.
      *
-     * @throws TranslatorException on auth failure, network error, or unexpected response
+     * @throws TranslatorException on auth failure (401), oversized input (413),
+     *                             network error, or unexpected response
      */
     public function translate(
         string  $text,
-        string  $targetLang = 'English',
-        ?string $requestId  = null,
+        string  $targetLang  = 'English',
+        ?string $requestId   = null,
+        int     $cachePolicy = CachePolicy::NORMAL,
     ): TranslationResult {
         $payload = [
-            'text'        => $text,
-            'target_lang' => $targetLang,
-            'request_id'  => $requestId,
+            'text'         => $text,
+            'target_lang'  => $targetLang,
+            'cache_policy' => CachePolicy::toWire($cachePolicy),
+            'request_id'   => $requestId,
         ];
 
         $data = $this->post('/translate', $payload);
 
         return new TranslationResult(
             translation: $data['translation'] ?? $text,
-            sourceLang:  $data['source_lang'] ?? '',
-            targetLang:  $data['target_lang'] ?? $targetLang,
-            original:    $data['original']    ?? $text,
-            engine:      $data['engine']      ?? 'none',
-            status:      $data['status']      ?? 'fallback',
-            requestId:   $data['request_id']  ?? $requestId,
+            sourceLang:  $data['source_lang'] ?? 'unknown',
+            targetLang:  $data['target_lang']  ?? $targetLang,
+            original:    $data['original']     ?? $text,
+            engine:      $data['engine']       ?? 'none',
+            status:      $data['status']       ?? 'fallback',
+            requestId:   $data['request_id']   ?? $requestId,
+            resultCode:  (int) ($data['result_code'] ?? 1),
+            safeError:   '',
         );
     }
 
     /**
-     * Check service health — useful before deploying or for monitoring.
+     * Check service health — useful for monitoring or before a deployment.
      *
      * @throws TranslatorException on network error
      */
@@ -133,9 +142,12 @@ class TranslatorClient
             );
         }
 
+        // 413 TEXT_TOO_LARGE and 422 INVALID_LANGUAGE / bad policy are caller errors.
+        // 503 BUSY may be retried. Expose the result_code from the body when available.
         if ($httpCode >= 400) {
-            $message = $data['detail'] ?? $data['error'] ?? $data['message'] ?? "HTTP {$httpCode}";
-            throw new TranslatorException((string) $message, $httpCode);
+            $detail  = $data['detail'] ?? $data['error'] ?? $data['message'] ?? "HTTP {$httpCode}";
+            $message = is_array($detail) ? ($detail['message'] ?? json_encode($detail)) : (string) $detail;
+            throw new TranslatorException($message, $httpCode);
         }
 
         return $data;
