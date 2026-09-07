@@ -11,12 +11,14 @@ class TranslatorClient
     /**
      * @param string $baseUrl  Base URL of the translator service, e.g. https://translate.yourdomain.com
      * @param string $token    Service token (from config.yaml service_tokens)
-     * @param int    $timeout  Request timeout in seconds (default 15 — allows for AI inference)
+     * @param int    $timeout  Request timeout in seconds.
+     *                         Must exceed the service's OLLAMA_TIMEOUT (default 120s) plus network headroom.
+     *                         Cache hits return in <100ms; only cold AI misses approach the full timeout.
      */
     public function __construct(
         string               $baseUrl,
         private readonly string $token,
-        private readonly int    $timeout = 15,
+        private readonly int    $timeout = 150,
     ) {
         $this->baseUrl = rtrim($baseUrl, '/');
     }
