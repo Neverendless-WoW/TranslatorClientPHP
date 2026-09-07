@@ -1,6 +1,6 @@
 # Neverendless Translator — PHP Client
 
-PHP client library for the [Neverendless Translator REST API](https://github.com/YOUR_ORG/translator).
+PHP client library for the [Neverendless Translator REST API](https://github.com/Neverendless-WoW/translator).
 Translate text via a self-hosted AI translation service with Redis caching.
 
 Zero dependencies — uses PHP's built-in `curl` extension only.
@@ -120,7 +120,7 @@ Cache hits always return in ~2–50ms regardless of timeout setting.
 ## Service Setup
 
 This package is a client only. The translation service it connects to is a self-hosted Python microservice:
-[github.com/YOUR_ORG/translator](https://github.com/YOUR_ORG/translator)
+[github.com/Neverendless-WoW/translator](https://github.com/Neverendless-WoW/translator)
 
 Service tokens are configured in the service's `config.yaml`. Request one from whoever manages the deployment.
 
@@ -128,6 +128,6 @@ Service tokens are configured in the service's `config.yaml`. Request one from w
 
 ## Releases
 
-See [CHANGELOG](CHANGELOG.md) or the [GitHub releases page](https://github.com/YOUR_ORG/TranslatorClientPHP/releases).
+See [CHANGELOG](CHANGELOG.md) or the [GitHub releases page](https://github.com/Neverendless-WoW/TranslatorClientPHP/releases).
 
 Versioning follows [Semantic Versioning](https://semver.org).

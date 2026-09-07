@@ -49,7 +49,7 @@ This is done once when the package is first published. No GitHub Actions secrets
 
 1. Go to [packagist.org](https://packagist.org) and log in
 2. Click **Submit** (top right)
-3. Enter the GitHub repo URL: `https://github.com/YOUR_ORG/TranslatorClientPHP`
+3. Enter the GitHub repo URL: `https://github.com/Neverendless-WoW/TranslatorClientPHP`
 4. Click **Check** then **Submit**
 
 The package will appear as `neverendless/translator-client`.
