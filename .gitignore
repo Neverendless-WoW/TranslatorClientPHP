@@ -1,0 +1,20 @@
+# Composer — vendor dir and lock file (libraries don't commit lock files)
+vendor/
+composer.lock
+
+# PHP test artifacts
+.phpunit.result.cache
+.phpunit.cache/
+
+# Logs
+*.log
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
